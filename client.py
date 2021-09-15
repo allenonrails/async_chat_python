@@ -1,17 +1,25 @@
 import socket
+from threading import Thread
 
-# так как мы хотим общаться с сервером, то нам так же нужно указать через что и как мы будем общаться
-# и нужно, чтобы это совпадало с серверным сокетом, иначе общение не выйдет
 client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+client.connect(("127.0.0.1", 1234))
 
-# указываем куда клиент будет подключаться
-client.connect(("127.0.0.1", 3228))
+def listen_server():
+    while True:
+        data = client.recv(2048) 
+        print(data.decode("utf-8"))
 
-# первое, что мы сделаем -- получим информацию, которая к нам приходит с сервера
-while True:
-    data = client.recv(2048) # теперь пишем сколько данных хотим получить за 1 пакет (1mb)
-    
-    print(data.decode("utf-8")) # не забываем раскодировать
+def send_message_to_server():
+    # новый поток, чтобы могли слушать
+    listen_thread = Thread(target=listen_server)
+    listen_thread.start()
 
-    # отправляем данные, которые ввёл пользователь из консоли серверу
-    client.send(input("> ").encode("utf-8"))
+    while True:
+        try:
+            client.send(input("> ").encode("utf-8"))
+        except KeyboardInterrupt:
+            client.close()
+            break
+
+if __name__ == "__main__":
+    send_message_to_server()
