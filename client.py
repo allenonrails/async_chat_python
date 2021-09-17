@@ -1,25 +1,30 @@
-import socket
+from Socket import Socket
 from threading import Thread
 
-client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-client.connect(("127.0.0.1", 1234))
+from settings import SERVER_IP, SERVER_PORT
 
-def listen_server():
-    while True:
-        data = client.recv(2048) 
-        print(data.decode("utf-8"))
+class Client(Socket):
+    def __init__(self):
+        super(Client, self).__init__()
 
-def send_message_to_server():
-    # новый поток, чтобы могли слушать
-    listen_thread = Thread(target=listen_server)
-    listen_thread.start()
+    def set_up(self, ip: str, port: int):
+        self.connect((ip, port))
 
-    while True:
-        try:
-            client.send(input("> ").encode("utf-8"))
-        except KeyboardInterrupt:
-            client.close()
-            break
+        listen_thread = Thread(target=self.listen_socket)
+        listen_thread.start()
+
+        send_thread = Thread(target=self.send_data)
+        send_thread.start()
+
+    def listen_socket(self, listened_socket: object =None):
+        while True:
+            data = self.recv(2048) 
+            print(data.decode("utf-8"))
+
+    def send_data(self):
+        while True:
+            self.send(input(">>> ").encode("utf-8"))
 
 if __name__ == "__main__":
-    send_message_to_server()
+    client = Client()
+    client.set_up(SERVER_IP, SERVER_PORT)
